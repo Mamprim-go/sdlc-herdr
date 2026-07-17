@@ -60,7 +60,7 @@ self-hosted, herdr, sdlc
 
 Configure no repositorio:
 
-- secret `SDLC_GITHUB_TOKEN`;
+- permissao `issues: write` e `contents: write` no `GITHUB_TOKEN` dos workflows;
 - variable `SDLC_APPROVERS` com logins humanos separados por virgula;
 - labels `sdlc:ready`, `sdlc:processing`, `sdlc:plan-review`, `sdlc:qa-review`,
   `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`;

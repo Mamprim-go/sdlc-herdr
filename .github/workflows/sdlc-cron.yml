@@ -28,7 +28,7 @@ jobs:
           node-version: 20
       - run: node scripts/github-poller.mjs
         env:
-          GITHUB_TOKEN: ${{ secrets.SDLC_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           SDLC_APPROVERS: ${{ vars.SDLC_APPROVERS }}
           SDLC_TRIGGER_LABEL: sdlc:ready

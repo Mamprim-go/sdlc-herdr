@@ -29,7 +29,7 @@ jobs:
           node-version: 20
       - run: node scripts/promote.mjs
         env:
-          GITHUB_TOKEN: ${{ secrets.SDLC_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr_number }}
           EXPECTED_SHA: ${{ inputs.head_sha }}

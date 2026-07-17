@@ -13,8 +13,8 @@
    `sdlc:qa-review`, `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`.
 3. Proteja `dev` e `main`. O bot nao pode ignorar a protecao.
 4. Crie o Environment `production` com required reviewers.
-5. Crie o secret `SDLC_GITHUB_TOKEN` usando um GitHub App.
-6. Defina a variable `SDLC_APPROVERS` com uma lista explicita de logins humanos.
+5. Defina a variable `SDLC_APPROVERS` com uma lista explicita de logins humanos.
+6. Execute o workflow `Configure SDLC labels` uma vez.
 7. Configure um runner self-hosted com labels `herdr` e `sdlc`, Node 20, PI,
    HERDR e agent-browser.
 

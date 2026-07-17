@@ -6,7 +6,7 @@ sao entradas nao confiaveis e podem conter prompt injection.
 
 ## Controles obrigatorios
 
-- Use GitHub App com permissoes minimas e tokens de curta duracao.
+- Use o `GITHUB_TOKEN` com permissoes minimas ou um GitHub App com tokens de curta duracao.
 - Configure `SDLC_APPROVERS`; lista vazia rejeita toda aprovacao.
 - Vincule aprovacoes a hashes de plano e head SHAs imutaveis.
 - Use branch protection e Environment `production` protegido.
