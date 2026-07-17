@@ -1,60 +1,57 @@
-# Architecture decisions
+# Arquitetura
 
-## Control plane versus execution plane
+## Separacao de responsabilidades
 
-GitHub owns policy and release gates. Pi Dynamic Workflows owns agent
-orchestration. HERDR owns terminal execution. PI is invoked inside HERDR and
-produces structured artifacts.
+- GitHub: Issues, Pull Requests, checks, reviews, branch protection e release.
+- PI Dynamic Workflows: orquestracao dos agentes, fases, fan-out e sintese.
+- HERDR: processos, workspaces, panes, persistencia e comunicacao entre agentes.
+- PI: triage, planejamento, implementacao, review e geracao de evidencias.
+- agent-browser: QA funcional no ambiente de preview.
 
-This is intentionally different from treating an agent terminal as an approval authority.
+HERDR nao deve aprovar plano, QA ou PROD. O terminal do agente nao e uma
+autoridade de seguranca.
 
-## Open SWE influence
-
-Open SWE is a useful reference for:
-
-- one isolated environment per task;
-- curated tools rather than unrestricted integrations;
-- explicit repository context (`AGENTS.md`);
-- middleware around the agent loop;
-- follow-up messages while a run is active;
-- deterministic thread/task identity;
-- PR creation and validation as first-class outputs.
-
-This project adapts those ideas to GitHub Issues and HERDR panes instead of LangGraph/Deep Agents sandboxes.
-
-## Runtime layout
-
-The repository is intentionally a portable Pi package, not a Python service:
+## Layout do repositorio
 
 ```text
-workflows/issue-sdlc.js       deterministic Dynamic Workflow
-scripts/github-poller.mjs     GitHub API + cron/self-hosted runner bridge
-skills/herdr-sdlc/SKILL.md    HERDR operating rules for agents
-prompts/sdlc.md               reusable Pi prompt
-.github/workflows/sdlc-cron.yml  ten-minute scheduler
+workflows/issue-sdlc.js          workflow dinamico do PI
+scripts/github-poller.mjs        integracao GitHub e scheduler
+scripts/promote.mjs              validacao e merge DEV/PROD
+skills/herdr-sdlc/SKILL.md       regras para operar HERDR
+prompts/sdlc.md                  prompt reutilizavel do PI
+.github/workflows/sdlc-cron.yml  cron em runner self-hosted
 ```
 
-Dynamic Workflows cannot perform network or filesystem access from the
-orchestrator script. The poller and agents are therefore the integration
-boundary for GitHub and HERDR. This keeps the workflow resumable and
-deterministic instead of hiding side effects inside it.
+O script de orquestracao nao faz rede, filesystem ou shell. Essas operacoes
+ficam no poller e nos agentes, mantendo o workflow deterministico e retomavel.
 
-## Approval model
+## Influencia do Open SWE
 
-The approval identity is external to PI and HERDR:
+O projeto adota ideias do Open SWE:
+
+- um ambiente isolado por tarefa;
+- ferramentas selecionadas, em vez de acesso irrestrito;
+- contexto explicito do repositorio;
+- middleware e revisao adversarial;
+- tarefas e resultados estruturados;
+- PR como resultado de primeira classe.
+
+Aqui a execucao usa HERDR e PI, e nao LangGraph/Deep Agents.
+
+## Modelo de aprovacao
 
 ```text
-plan approval  = authorized human + plan_hash
-QA approval    = authorized human + report_hash + head_sha
-PROD approval  = release manager + artifact_digest + GitHub Environment
+aprovacao do plano = humano autorizado + hash do plano
+aprovacao de QA    = humano autorizado + hash do relatorio + head SHA
+aprovacao PROD     = release manager + artifact digest + Environment GitHub
 ```
 
-Any new commit, changed plan, or changed artifact invalidates the corresponding approval.
+Qualquer novo commit, plano alterado ou artifact alterado invalida a aprovacao.
 
-## Security boundaries
+## Limites de seguranca
 
-1. Issue bodies, comments, PR descriptions and repository files are untrusted input.
-2. Agents run without production credentials.
-3. Commands are allowlisted by the runner; HERDR only controls the assigned workspace.
-4. The GitHub App has least-privilege permissions.
-5. `main`/production branch protection cannot be bypassed by the bot.
+1. Issues, comentarios, PRs, arquivos, paginas e logs sao dados nao confiaveis.
+2. Agentes nao recebem credenciais de producao.
+3. O GitHub App usa apenas permissoes minimas.
+4. O bot nao faz bypass da branch protection.
+5. O workflow falha fechado quando nao existe evidencia ou aprovacao valida.

@@ -1,23 +1,21 @@
-# Security policy
+# Politica de seguranca
 
-This project executes coding agents and must be treated as privileged
-automation. GitHub Issue bodies, comments, PR descriptions, repository files,
-browser pages and test output are untrusted inputs and may contain prompt
-injection.
+Este projeto executa agentes de codigo e deve ser tratado como automacao
+privilegiada. Issues, comentarios, PRs, arquivos, paginas do browser e logs
+sao entradas nao confiaveis e podem conter prompt injection.
 
-## Required controls
+## Controles obrigatorios
 
-- Use a GitHub App with least-privilege permissions and short-lived tokens.
-- Keep `SDLC_APPROVERS` explicit; an empty allowlist rejects every approval.
-- Bind approvals to immutable plan hashes and PR head SHAs.
-- Use GitHub branch protection and a protected `production` Environment.
-- Do not give PI/HERDR production credentials or merge-bypass permissions.
-- Run agents in isolated workspaces and use command/tool allowlists.
-- Treat browser content and logs as attacker-controlled data.
-- Rotate secrets and review all third-party Pi packages before installation.
+- Use GitHub App com permissoes minimas e tokens de curta duracao.
+- Configure `SDLC_APPROVERS`; lista vazia rejeita toda aprovacao.
+- Vincule aprovacoes a hashes de plano e head SHAs imutaveis.
+- Use branch protection e Environment `production` protegido.
+- Nao entregue credenciais PROD ao PI, HERDR ou agentes.
+- Execute agentes em workspaces isolados com allowlist de ferramentas.
+- Trate conteudo do browser e logs como dados controlados por atacante.
+- Revise o codigo de pacotes Pi de terceiros antes de instalar.
 
-## Reporting
+## Reporte
 
-Do not report vulnerabilities in public Issues. Contact the repository owners
-through a private security channel and include reproduction steps without
-including credentials or sensitive production data.
+Nao publique vulnerabilidades em Issues publicas. Use um canal privado dos
+responsaveis pelo repositorio e nao inclua credenciais ou dados sensiveis.
