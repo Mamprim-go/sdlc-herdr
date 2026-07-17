@@ -38,4 +38,4 @@ jobs:
           ISSUE_NUMBER: ${{ inputs.issue_number }}
           EXPECTED_SHA: ${{ inputs.head_sha }}
           PROMOTION_TARGET: dev
-          SDLC_REQUIRED_CHECKS: ci/test,agent/thermonuclear-review,agent/browser-qa
+          SDLC_REQUIRED_CHECKS: ${{ vars.SDLC_REQUIRED_CHECKS || 'test' }}

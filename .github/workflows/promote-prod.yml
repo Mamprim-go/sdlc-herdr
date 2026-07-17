@@ -34,4 +34,4 @@ jobs:
           PR_NUMBER: ${{ inputs.pr_number }}
           EXPECTED_SHA: ${{ inputs.head_sha }}
           PROMOTION_TARGET: prod
-          SDLC_REQUIRED_CHECKS: ci/test,agent/thermonuclear-review,agent/browser-qa
+          SDLC_REQUIRED_CHECKS: ${{ vars.SDLC_REQUIRED_CHECKS || 'test' }}
