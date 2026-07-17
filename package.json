@@ -1,0 +1,17 @@
+{
+  "name": "sdlc-herdr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GitHub Issue SDLC workflows for Pi, HERDR and agent-browser",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "poll": "node scripts/github-poller.mjs",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=20" },
+  "pi": {
+    "skills": ["skills"],
+    "prompts": ["prompts"]
+  }
+}

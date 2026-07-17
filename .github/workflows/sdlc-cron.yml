@@ -1,0 +1,35 @@
+name: SDLC poller
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/10 * * * *'
+
+concurrency:
+  group: sdlc-poller-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  poll:
+    # Requires a self-hosted runner with Node 20, Pi, HERDR and provider
+    # credentials. GitHub-hosted runners cannot reach a local HERDR server.
+    runs-on: [self-hosted, herdr, sdlc]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/github-poller.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.SDLC_GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SDLC_APPROVERS: ${{ vars.SDLC_APPROVERS }}
+          SDLC_TRIGGER_LABEL: sdlc:ready
+          SDLC_PROCESSING_LABEL: sdlc:processing

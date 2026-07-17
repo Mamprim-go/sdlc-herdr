@@ -1,0 +1,41 @@
+name: Promote approved PR to DEV
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: GitHub issue number carrying sdlc:qa-approved
+        required: true
+        type: string
+      pr_number:
+        description: Pull request to merge
+        required: true
+        type: string
+      head_sha:
+        description: Exact reviewed PR head SHA
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+  checks: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/promote.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.SDLC_GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          EXPECTED_SHA: ${{ inputs.head_sha }}
+          PROMOTION_TARGET: dev
+          SDLC_REQUIRED_CHECKS: ci/test,agent/thermonuclear-review,agent/browser-qa
