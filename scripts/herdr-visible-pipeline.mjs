@@ -18,6 +18,11 @@ async function paneRead(herdr, pane) {
 async function startAgent(herdr, pane, name) {
   await call(herdr, ['pane', 'run', pane, `pi --name '${name}'`])
   await sleep(1500)
+  // Visible phase agents must not spawn hidden Dynamic Workflow subagents.
+  // Their work belongs in this named HERDR pane so the operator can inspect
+  // and steer the correct PI session.
+  await submit(herdr, pane, '/workflows-trigger off')
+  await sleep(500)
 }
 
 async function submit(herdr, pane, prompt) {
