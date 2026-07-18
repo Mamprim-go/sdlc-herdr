@@ -28,21 +28,21 @@ async function submit(herdr, pane, prompt) {
 async function phase({ herdr, pane, name, prompt, cwd, artifact, timeoutMs = 20 * 60 * 1000 }) {
   await startAgent(herdr, pane, name)
   const before = await paneRead(herdr, pane)
-  const count = (text, marker) => text.split(marker).length - 1
-  const beforeComplete = count(before, 'SDLC_PHASE_COMPLETE')
-  const beforeBlocked = count(before, 'SDLC_PHASE_BLOCKED')
+  const hasMarker = (text, marker) => new RegExp(`(?:^|\\n)\\s*${marker}\\s*(?:\\r?\\n|$)`).test(text)
+  const beforeComplete = hasMarker(before, 'SDLC_PHASE_COMPLETE')
+  const beforeBlocked = hasMarker(before, 'SDLC_PHASE_BLOCKED')
   await submit(herdr, pane, prompt)
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const output = await paneRead(herdr, pane)
-    if (count(output, 'SDLC_PHASE_COMPLETE') > beforeComplete) {
+    if (!beforeComplete && hasMarker(output, 'SDLC_PHASE_COMPLETE')) {
       try {
         return { output, artifact: JSON.parse(await readFile(`${cwd}/${artifact}`, 'utf8')) }
       } catch (error) {
         return { output, error: `Fase terminou, mas o artifact ${artifact} nao foi encontrado: ${error.message}` }
       }
     }
-    if (count(output, 'SDLC_PHASE_BLOCKED') > beforeBlocked) return { output, blocked: true }
+    if (!beforeBlocked && hasMarker(output, 'SDLC_PHASE_BLOCKED')) return { output, blocked: true }
     await sleep(2000)
   }
   return { blocked: true, error: `Timeout aguardando a sessao PI ${name}` }
