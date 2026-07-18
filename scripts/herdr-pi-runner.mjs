@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { createSdlcLayout } from './herdr-layout.mjs'
 
 const exec = promisify(execFile)
 
@@ -25,15 +26,16 @@ async function command(binary, args) {
   return result.stdout
 }
 
-export async function runPiInHerdr({ herdr = process.env.HERDR_BIN ?? 'herdr', pi = process.env.SDLC_PI_BIN ?? 'pi', cwd, prompt, timeoutMs = 20 * 60 * 1000 }) {
-  const created = JSON.parse(await command(herdr, ['workspace', 'create', '--cwd', cwd, '--label', `sdlc-${Date.now()}`, '--no-focus']))
-  const workspace = created.result.workspace.workspace_id
-  const pane = created.result.root_pane.pane_id
+export async function runPiInHerdr({ herdr = process.env.HERDR_BIN ?? 'herdr', pi = process.env.SDLC_PI_BIN ?? 'pi', cwd, prompt, label = 'SDLC - Workflow', timeoutMs = 20 * 60 * 1000 }) {
+  const layout = await createSdlcLayout({ herdr, cwd, label })
+  const workspace = layout.workspaceId
+  const pane = layout.panes.orchestrator
   const events = []
   const startedAt = Date.now()
   try {
     await command(herdr, ['pane', 'run', pane, `${pi} --mode rpc --no-session`])
-    await command(herdr, ['pane', 'send-text', pane, `${JSON.stringify({ type: 'prompt', message: prompt })}\n`])
+    await command(herdr, ['pane', 'send-text', pane, JSON.stringify({ type: 'prompt', message: prompt })])
+    await command(herdr, ['pane', 'send-keys', pane, 'enter'])
     while (Date.now() - startedAt < timeoutMs) {
       const output = await command(herdr, ['pane', 'read', pane, '--source', 'recent-unwrapped', '--lines', '500'])
       for (const event of parseTerminalEvents(output)) {
