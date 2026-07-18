@@ -25,6 +25,11 @@ PI Dynamic Workflow
 HERDR e o runtime de terminais e agentes. Ele nao e a autoridade de aprovacao.
 O GitHub e a autoridade para aprovacoes humanas, protecao de branches e release.
 
+O poller mantém um comentário Control Tower auditável por Issue, marcado por
+`<!-- sdlc-control-tower:v1 -->`, com estado, gates, rastreabilidade, evidências
+válidas e recuperação segura. A atualização é idempotente e não publica
+prompts, secrets ou transcripts.
+
 Cada Issue cria um workspace HERDR chamado `Issue #<numero> - SDLC`. As sessoes
 PI ficam visiveis e persistentes nos panes `Triage`, `Plano`, `Execucao`,
 `Thermonuclear Review` e `QA agent-browser`. O operador pode ler e interagir
@@ -33,7 +38,7 @@ com cada sessao enquanto o fluxo esta em andamento.
 ## Fluxo
 
 ```text
-Triage -> Plan -> aprovacao humana do plano -> Execute
+Triage -> Plan -> Execute
        -> Thermonuclear Review -> agent-browser QA
        -> aprovacao humana do QA -> merge DEV
        -> aprovacao humana PROD -> merge/deploy PROD
@@ -67,7 +72,7 @@ Configure no repositorio:
 
 - permissao `issues: write` e `contents: write` no `GITHUB_TOKEN` dos workflows;
 - variable `SDLC_APPROVERS` com logins humanos separados por virgula;
-- labels `sdlc:ready`, `sdlc:processing`, `sdlc:plan-review`, `sdlc:qa-review`,
+- labels `sdlc:ready`, `sdlc:processing`, `sdlc:qa-review`,
   `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`;
 - protecao de branches `dev` e `main`;
 - Environment `production` com required reviewers;
@@ -77,20 +82,13 @@ Adicione `sdlc:ready` a uma Issue para iniciar o fluxo.
 
 ## Aprovacoes
 
-O plano e publicado como comentario com hash. Um aprovador configurado deve
-comentar exatamente:
-
-```text
-/approve plan sha256:<hash-do-plano>
-```
-
-Depois do QA:
+O plano e publicado e executado diretamente. Depois do QA:
 
 ```text
 /approve qa <head-sha-do-PR>
 ```
 
-Comentarios sao apenas solicitacoes. O poller valida autor, hash e SHA. PROD
+Comentarios sao apenas solicitacoes. O poller valida autor e SHA. PROD
 usa adicionalmente a aprovacao nativa do GitHub Environment.
 
 ## Promocao
