@@ -1,0 +1,22 @@
+{
+  "pr_number": 3,
+  "head_sha": "9a70c354cc08af761f6e87db724f9390b7e7b42a",
+  "changed_files": [
+    ".github/workflows/sdlc-cron.yml",
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/OPERATIONS.md",
+    "scripts/control-tower.mjs",
+    "scripts/control-tower.test.mjs",
+    "scripts/github-poller.mjs"
+  ],
+  "tests": [
+    "npm test",
+    "npm run validate"
+  ],
+  "risks": [
+    "GitHub API permission/rate-limit failure leaves the last Control Tower state and labels fail-safe.",
+    "A stale local lease requires operator confirmation before removal.",
+    "Evidence and human approvals are rejected unless linked to an allowlisted GitHub event, SHA, and digest."
+  ]
+}
