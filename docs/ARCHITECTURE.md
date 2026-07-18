@@ -17,6 +17,7 @@ autoridade de seguranca.
 workflows/issue-sdlc.js          workflow dinamico do PI
 scripts/github-poller.mjs        integracao GitHub e scheduler
 scripts/promote.mjs              validacao e merge DEV/PROD
+scripts/herdr-visible-pipeline.mjs  uma sessao PI interativa por tarefa
 skills/herdr-sdlc/SKILL.md       regras para operar HERDR
 prompts/sdlc.md                  prompt reutilizavel do PI
 .github/workflows/sdlc-cron.yml  cron em runner self-hosted
@@ -24,6 +25,24 @@ prompts/sdlc.md                  prompt reutilizavel do PI
 
 O script de orquestracao nao faz rede, filesystem ou shell. Essas operacoes
 ficam no poller e nos agentes, mantendo o workflow deterministico e retomavel.
+
+## Sessoes PI visiveis
+
+Cada Issue cria um workspace HERDR chamado `Issue #<numero> - SDLC` com panes:
+
+```text
+00 - Orquestrador PI
+01 - Triage
+02 - Plano
+03 - Execucao
+04 - Thermonuclear Review
+05 - QA agent-browser
+06 - Gates GitHub
+```
+
+Cada tarefa inicia uma sessao PI persistente com nome `Issue #<numero> - <tarefa>`.
+O operador pode focar qualquer pane, ler a conversa, interromper o agente e
+enviar instrucoes. O poller nao fecha o workspace ao atingir um gate humano.
 
 ## Influencia do Open SWE
 

@@ -32,16 +32,17 @@ export async function createSdlcLayout({ herdr, cwd, label }) {
 
   await rename(herdr, root, '00 - Orquestrador PI')
   panes.triage = await split(herdr, root, 'right')
-  await rename(herdr, panes.triage, '01 - Triage e Plano')
+  await rename(herdr, panes.triage, '01 - Triage')
+  panes.plan = await split(herdr, panes.triage, 'down')
+  await rename(herdr, panes.plan, '02 - Plano')
   panes.execute = await split(herdr, root, 'down')
-  await rename(herdr, panes.execute, '02 - Execucao')
-  panes.review = await split(herdr, panes.triage, 'down')
-  await rename(herdr, panes.review, '03 - Thermonuclear Review')
+  await rename(herdr, panes.execute, '03 - Execucao')
+  panes.review = await split(herdr, panes.execute, 'right')
+  await rename(herdr, panes.review, '04 - Thermonuclear Review')
   panes.qa = await split(herdr, panes.review, 'down')
-  await rename(herdr, panes.qa, '04 - QA agent-browser')
+  await rename(herdr, panes.qa, '05 - QA agent-browser')
   panes.gates = await split(herdr, panes.execute, 'down')
-  await rename(herdr, panes.gates, '05 - Gates GitHub')
+  await rename(herdr, panes.gates, '06 - Gates GitHub')
 
   return { workspaceId, panes }
 }
-

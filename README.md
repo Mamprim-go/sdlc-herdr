@@ -25,6 +25,11 @@ PI Dynamic Workflow
 HERDR e o runtime de terminais e agentes. Ele nao e a autoridade de aprovacao.
 O GitHub e a autoridade para aprovacoes humanas, protecao de branches e release.
 
+Cada Issue cria um workspace HERDR chamado `Issue #<numero> - SDLC`. As sessoes
+PI ficam visiveis e persistentes nos panes `Triage`, `Plano`, `Execucao`,
+`Thermonuclear Review` e `QA agent-browser`. O operador pode ler e interagir
+com cada sessao enquanto o fluxo esta em andamento.
+
 ## Fluxo
 
 ```text
