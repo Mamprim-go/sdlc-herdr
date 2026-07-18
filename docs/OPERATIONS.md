@@ -36,22 +36,15 @@ Labels são sinalização, não prova de aprovação.
 ## Fluxo normal
 
 1. Adicione `sdlc:ready` a uma Issue.
-2. O cron inicia o workflow e publica o plano.
-3. Um aprovador autorizado comenta:
-
-   ```text
-   /approve plan sha256:<hash-do-plano>
-   ```
-
-4. O poller retoma somente com o mesmo plano aprovado.
-5. Apos o QA, um aprovador comenta:
+2. O cron inicia o workflow, publica o plano e segue automaticamente para Execute.
+3. Apos o QA, um aprovador comenta:
 
    ```text
    /approve qa <head-sha>
    ```
 
-6. Execute `Promote approved PR to DEV` com Issue, PR e SHA exatos.
-7. Abra uma PR `dev -> main` e execute `Promote approved DEV PR to PROD`.
+4. Execute `Promote approved PR to DEV` com Issue, PR e SHA exatos.
+5. Abra uma PR `dev -> main` e execute `Promote approved DEV PR to PROD`.
    O Environment pausa o job ate uma aprovacao humana.
 
 ## Falhas

@@ -38,7 +38,7 @@ com cada sessao enquanto o fluxo esta em andamento.
 ## Fluxo
 
 ```text
-Triage -> Plan -> aprovacao humana do plano -> Execute
+Triage -> Plan -> Execute
        -> Thermonuclear Review -> agent-browser QA
        -> aprovacao humana do QA -> merge DEV
        -> aprovacao humana PROD -> merge/deploy PROD
@@ -82,20 +82,13 @@ Adicione `sdlc:ready` a uma Issue para iniciar o fluxo.
 
 ## Aprovacoes
 
-O plano e publicado como comentario com hash. Um aprovador configurado deve
-comentar exatamente:
-
-```text
-/approve plan sha256:<hash-do-plano>
-```
-
-Depois do QA:
+O plano e publicado e executado diretamente. Depois do QA:
 
 ```text
 /approve qa <head-sha-do-PR>
 ```
 
-Comentarios sao apenas solicitacoes. O poller valida autor, hash e SHA. PROD
+Comentarios sao apenas solicitacoes. O poller valida autor e SHA. PROD
 usa adicionalmente a aprovacao nativa do GitHub Environment.
 
 ## Promocao

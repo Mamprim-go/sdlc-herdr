@@ -84,7 +84,7 @@ export async function runVisiblePipeline({ herdr = process.env.HERDR_BIN ?? 'her
   const review = await phase({
     herdr, pane: layout.panes.review, cwd, artifact: `.sdlc/runs/issue-${issue}/review.json`,
     name: `Issue #${issue} - Thermonuclear Review`,
-    prompt: `${common}\n\nRevise a implementacao da PR ${execution.artifact.pr_number} no SHA ${execution.artifact.head_sha} contra o plano aprovado. Seja adversarial em seguranca, corretude, regressao, performance e escopo. Escreva .sdlc/runs/issue-${issue}/review.json com verdict, blocking_findings e evidence. Use verdict PASS ou BLOCKED. Ao terminar, escreva exatamente SDLC_PHASE_COMPLETE.`,
+    prompt: `${common}\n\nRevise a implementacao da PR ${execution.artifact.pr_number} no SHA ${execution.artifact.head_sha} contra o plano gerado. Seja adversarial em seguranca, corretude, regressao, performance e escopo. Escreva .sdlc/runs/issue-${issue}/review.json com verdict, blocking_findings e evidence. Use verdict PASS ou BLOCKED. Ao terminar, escreva exatamente SDLC_PHASE_COMPLETE.`,
   })
   if (review.blocked || review.error || review.artifact?.verdict !== 'PASS') return { ...base, status: 'return_to_execute', error: review.error, execution: execution.artifact, review: review.artifact }
   const qa = await phase({
