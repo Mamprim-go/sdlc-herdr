@@ -1,0 +1,57 @@
+{
+  "verdict": "BLOCKED",
+  "blocking_findings": [
+    {
+      "severity": "high",
+      "title": "Estados bloqueados e demais sdlc:* são reprocessados",
+      "description": "O filtro de main() agora encaminha toda Issue com qualquer label sdlc:* para handle(). Se não houver um estado de máquina reconhecido, inclusive em sdlc:blocked, handle() inicia Pi novamente; e uma Issue com sdlc:qa-approved retorna antes de publicar/atualizar o Control Tower. Isso viola o fail-safe, pode executar trabalho repetidamente e deixa estados sdlc:* sem o comentário exigido.",
+      "evidence": [
+        "scripts/github-poller.mjs:172-177",
+        "scripts/github-poller.mjs:223-228"
+      ]
+    },
+    {
+      "severity": "high",
+      "title": "Aprovação de QA não é vinculada ao head SHA atual",
+      "description": "approvalEvent() valida apenas o hash esperado no comentário. githubSnapshot() usa o head_sha do resultado anterior para a aprovação, sem comparar esse valor ao head SHA atual retornado pela API do PR. Assim, um comentário válido para um commit antigo pode ser exibido como VALIDADO e o caminho de aprovação pode adicionar sdlc:qa-approved após o PR mudar.",
+      "evidence": [
+        "scripts/github-poller.mjs:93-105",
+        "scripts/github-poller.mjs:186-191",
+        "scripts/control-tower.mjs:49-51",
+        "scripts/control-tower.mjs:73-78"
+      ]
+    },
+    {
+      "severity": "high",
+      "title": "Evidência não é realmente verificada e permite quebra de Markdown",
+      "description": "validateEvidence() só verifica o formato do digest; não consulta o artifact/check nem confirma que o digest corresponde a uma evidência QA/Thermonuclear do repositório. Além disso, evidenceUrl() aceita URLs de githubusercontent.com fora do repositório e renderControlTower() insere a URL sem escape no destino Markdown. Dados de resultado não confiáveis podem criar link/markup diferente do pretendido.",
+      "evidence": [
+        "scripts/control-tower.mjs:11-19",
+        "scripts/control-tower.mjs:23-30",
+        "scripts/control-tower.mjs:66-70"
+      ]
+    },
+    {
+      "severity": "medium",
+      "title": "Concorrência pode remover o lease de outro processo",
+      "description": "O lease é identificado apenas pelo caminho. Depois de considerar o arquivo stale, um processo pode adquirir o mesmo caminho enquanto o processo antigo ainda executa; o finally do processo antigo chama releaseLease() e pode apagar o lock do novo proprietário. A proteção de concorrência não é segura nesse cenário.",
+      "evidence": [
+        "scripts/github-poller.mjs:20-35",
+        "scripts/github-poller.mjs:218-229"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "type": "tests",
+      "command": "npm test && npm run validate",
+      "result": "PASS (7 tests; validate OK)",
+      "note": "Os testes existentes não cobrem criação concorrente, atualização concorrente, sdlc:blocked, stale SHA, artifact digest ou segurança do destino Markdown."
+    },
+    {
+      "type": "plan",
+      "path": ".sdlc/runs/issue-2/execution.json",
+      "note": "Registra PR 3, SHA revisado e riscos declarados, mas não contém um plano aprovado detalhado; os critérios da Issue foram usados como contrato de revisão."
+    }
+  ]
+}

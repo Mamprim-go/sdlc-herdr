@@ -21,7 +21,7 @@ async function api(path, options = {}) {
 
 const labels = [
   ['sdlc:ready', '1d76db'], ['sdlc:processing', '5319e7'],
-  ['sdlc:plan-review', 'fbca04'], ['sdlc:qa-review', 'fbca04'],
+  ['sdlc:qa-review', 'fbca04'],
   ['sdlc:qa-approved', '0e8a16'], ['sdlc:needs-fix', 'd93f0b'],
   ['sdlc:blocked', 'b60205'],
 ]

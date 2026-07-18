@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { extractFinalText, parseResult } from './github-poller.mjs'
+import { acquireLease, extractFinalText, parseResult, releaseLease } from './github-poller.mjs'
 
 test('extracts the last assistant text from RPC events', () => {
   const events = [
@@ -19,4 +19,12 @@ test('parses a JSON result embedded in agent output', () => {
 
 test('fails closed when the agent result is not structured', () => {
   assert.equal(parseResult('no structured result').status, 'unknown')
+})
+
+test('lease release is owner-safe', () => {
+  const owner = acquireLease()
+  assert.ok(owner)
+  releaseLease('not-the-owner')
+  assert.equal(acquireLease(), false)
+  releaseLease(owner)
 })

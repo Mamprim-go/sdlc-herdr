@@ -9,8 +9,8 @@
    herdr integration install pi
    ```
 
-2. Crie as labels `sdlc:ready`, `sdlc:processing`, `sdlc:plan-review`,
-   `sdlc:qa-review`, `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`.
+2. Crie as labels `sdlc:ready`, `sdlc:processing`, `sdlc:qa-review`,
+   `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`.
 3. Proteja `dev` e `main`. O bot nao pode ignorar a protecao.
 4. Crie o Environment `production` com required reviewers.
 5. Defina a variable `SDLC_APPROVERS` com uma lista explicita de logins humanos.
@@ -58,7 +58,7 @@ Labels são sinalização, não prova de aprovação.
 
 - `sdlc:blocked` significa falha segura. Leia o comentario estruturado.
 - Commit novo invalida a aprovacao de QA.
-- Plano novo invalida a aprovacao do plano.
+- Plano novo exige uma nova execucao antes da aprovacao de QA.
 - Nao remova `sdlc:processing` enquanto um runner estiver ativo.
 - Se o runner morrer, confirme que nao ha PI/HERDR ativo antes de reativar a Issue.
 - Em `blocked`, corrija a causa no GitHub, confirme o SHA e reexecute o cron;

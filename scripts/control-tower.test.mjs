@@ -15,6 +15,30 @@ test('accepts only repository HTTPS evidence with a verifiable digest', () => {
   assert.equal(validateEvidence([good, { url: 'javascript:alert(1)', digest: 'abcdef1234567' }], { repository: 'Mamprim-go/sdlc-herdr', runId: 12 }).length, 1)
 })
 
+test('rejects unbound hosts, repositories, runs, and untyped evidence', () => {
+  const context = { repository: 'Mamprim-go/sdlc-herdr', runId: 12 }
+  assert.equal(validateEvidence([{ type: 'QA', url: 'https://github.com/other/repo/actions/runs/12', digest: 'abcdef1234567' }], context).length, 0)
+  assert.equal(validateEvidence([{ type: 'QA', url: 'https://github.com/Mamprim-go/sdlc-herdr/actions/runs/120', digest: 'abcdef1234567' }], context).length, 0)
+  assert.equal(validateEvidence([{ type: 'QA', url: 'https://githubusercontent.com/Mamprim-go/sdlc-herdr/actions/runs/12', digest: 'abcdef1234567' }], context).length, 0)
+  assert.equal(validateEvidence([{ url: 'https://github.com/Mamprim-go/sdlc-herdr/actions/runs/12', digest: 'abcdef1234567' }], context).length, 0)
+})
+
+test('renders evidence in an owner-safe markdown destination', () => {
+  const snapshot = normalizeSnapshot({
+    issue: 2,
+    result: { status: 'awaiting_qa_approval', repo: 'Mamprim-go/sdlc-herdr', run_id: 12 },
+    evidence: [{ type: 'QA', url: 'https://github.com/Mamprim-go/sdlc-herdr/actions/runs/12?x=%29', digest: 'abcdef1234567' }],
+  })
+  assert.match(renderControlTower(snapshot), /\[evidencia\]\(<https:\/\/github\.com\//)
+})
+
+test('never treats an old SHA as approval for the live SHA', () => {
+  const oldSha = 'abcdef1234567'
+  const liveSha = 'fedcba7654321'
+  const comment = { id: 4, created_at: '2024-01-01T00:00:00Z', user: { login: 'alice' }, body: `/approve qa ${oldSha}` }
+  assert.equal(approvalEvent(comment, 'qa', liveSha, new Set(['alice'])), null)
+})
+
 test('selects oldest marked bot comment and ignores human lookalikes', () => {
   const comments = [
     { id: 3, created_at: '2024-01-03', user: { login: 'github-actions[bot]' }, body: CONTROL_TOWER_MARKER },

@@ -72,7 +72,7 @@ Configure no repositorio:
 
 - permissao `issues: write` e `contents: write` no `GITHUB_TOKEN` dos workflows;
 - variable `SDLC_APPROVERS` com logins humanos separados por virgula;
-- labels `sdlc:ready`, `sdlc:processing`, `sdlc:plan-review`, `sdlc:qa-review`,
+- labels `sdlc:ready`, `sdlc:processing`, `sdlc:qa-review`,
   `sdlc:qa-approved`, `sdlc:needs-fix` e `sdlc:blocked`;
 - protecao de branches `dev` e `main`;
 - Environment `production` com required reviewers;

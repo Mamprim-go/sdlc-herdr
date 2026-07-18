@@ -11,12 +11,16 @@ const sha = (value) => typeof value === 'string' && /^(?:[0-9a-f]{7,64}|sha256:[
 export function evidenceUrl(value, { repository, runId } = {}) {
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:' || url.username || url.password || url.hash) return null
+    if (!repository || !/^\d+$/.test(String(runId)) || !/^[^/]+\/[^/]+$/.test(repository) || url.protocol !== 'https:' || url.username || url.password || url.hash) return null
     const host = url.hostname.toLowerCase()
-    if (host !== 'github.com' && host !== 'githubusercontent.com' && host !== 'actions.githubusercontent.com') return null
-    if (repository && host === 'github.com' && !url.pathname.toLowerCase().startsWith(`/${repository.toLowerCase()}/`)) return null
-    if (runId && !url.pathname.includes(String(runId))) return null
-    return url.href.slice(0, 1000)
+    if (host !== 'github.com') return null
+    const repoPath = `/${repository.replace(/^\/+|\/+$/g, '').toLowerCase()}/`
+    const path = url.pathname.toLowerCase()
+    if (!path.startsWith(repoPath)) return null
+    const runSegment = `/runs/${String(runId)}`
+    if (!new RegExp(`${runSegment}(?:/|$)`, 'i').test(path)) return null
+    if (url.href.length > 1000) return null
+    return url.href
   } catch { return null }
 }
 
@@ -26,17 +30,18 @@ export function validateEvidence(items = [], context = {}) {
     const url = evidenceUrl(item.url, context)
     const digest = item.digest ?? item.sha ?? item.head_sha
     if (!url || !sha(String(digest ?? ''))) return []
+    if (!['qa', 'thermonuclear', 'review', 'agent-browser'].includes(String(item.type ?? '').toLowerCase())) return []
     return [{ type: text(item.type, 'evidence'), url, digest: String(digest) }]
   })
 }
 
 const statusMap = {
-  awaiting_plan_approval: ['plan-review', 'Plan', 'Aprovador humano deve validar o hash do plano.'],
   awaiting_qa_approval: ['qa-review', 'QA', 'Aprovador humano deve validar o relatorio e o head SHA.'],
   return_to_execute: ['needs-fix', 'Review', 'Corrigir os achados e executar a revisao novamente.'],
   blocked: ['blocked', 'Falha segura', 'Investigar o bloqueio; nao fazer merge ou deploy.'],
   processing: ['processing', 'Execucao', 'Aguardar o poller/agente e verificar o workspace.'],
   ready: ['ready', 'Triage', 'Iniciar a triagem da Issue.'],
+  'qa-approved': ['qa-approved', 'QA', 'Aguardar checks e branch protection antes do merge.'],
 }
 
 export function normalizeSnapshot({ issue, labels = [], result = {}, pullRequest = null, approvals = {}, evidence = [] } = {}) {
@@ -65,7 +70,7 @@ export function findControlTowerComments(items = [], botLogin = 'github-actions[
 
 export function renderControlTower(snapshot) {
   const gateLines = Object.entries(snapshot.gates ?? {}).map(([name, gate]) => `- **${md(name)}**: ${gate.state}${gate.login ? ` — ${md(gate.login)} (${md(gate.hash)})` : ''}`).join('\n') || '- Nenhum gate humano registrado: PENDENTE'
-  const evidenceLines = (snapshot.evidence ?? []).map((item) => `- ${md(item.type)}: [evidencia](${item.url}) — ${md(item.digest)}`).join('\n') || '- Nenhuma evidencia valida publicada.'
+  const evidenceLines = (snapshot.evidence ?? []).map((item) => `- ${md(item.type)}: [evidencia](<${item.url}>) — ${md(item.digest)}`).join('\n') || '- Nenhuma evidencia valida publicada.'
   const body = `${CONTROL_TOWER_MARKER}\n## SDLC Control Tower\n\n- **Estado:** ${md(snapshot.state)}\n- **Fase:** ${md(snapshot.phase)}\n- **Issue:** #${snapshot.issue}\n- **Workspace HERDR:** ${md(snapshot.workspace)}\n- **PR/SHA:** ${snapshot.pr ? `#${snapshot.pr}` : '—'} / ${md(snapshot.head_sha)}\n- **Proxima acao humana:** ${md(snapshot.next_action)}\n\n### Gates\n${gateLines}\n\n### Evidencias\n${evidenceLines}\n\n${snapshot.fail_safe ? `> **Fail-safe:** ${md(snapshot.fail_safe)}\n` : ''}<!-- sdlc-control-tower-data ${JSON.stringify(snapshot).replace(/-->/g, '-- >')} -->`
   return body.slice(0, MAX_COMMENT)
 }

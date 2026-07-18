@@ -61,12 +61,11 @@ Aqui a execucao usa HERDR e PI, e nao LangGraph/Deep Agents.
 ## Modelo de aprovacao
 
 ```text
-aprovacao do plano = humano autorizado + hash do plano
 aprovacao de QA    = humano autorizado + hash do relatorio + head SHA
 aprovacao PROD     = release manager + artifact digest + Environment GitHub
 ```
 
-Qualquer novo commit, plano alterado ou artifact alterado invalida a aprovacao.
+Qualquer novo commit, plano ou artifact alterado invalida a aprovacao de QA.
 
 ## Limites de seguranca
 
