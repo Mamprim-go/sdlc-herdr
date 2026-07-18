@@ -25,6 +25,11 @@ PI Dynamic Workflow
 HERDR e o runtime de terminais e agentes. Ele nao e a autoridade de aprovacao.
 O GitHub e a autoridade para aprovacoes humanas, protecao de branches e release.
 
+O poller mantém um comentário Control Tower auditável por Issue, marcado por
+`<!-- sdlc-control-tower:v1 -->`, com estado, gates, rastreabilidade, evidências
+válidas e recuperação segura. A atualização é idempotente e não publica
+prompts, secrets ou transcripts.
+
 Cada Issue cria um workspace HERDR chamado `Issue #<numero> - SDLC`. As sessoes
 PI ficam visiveis e persistentes nos panes `Triage`, `Plano`, `Execucao`,
 `Thermonuclear Review` e `QA agent-browser`. O operador pode ler e interagir

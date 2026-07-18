@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, statSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { runPiInHerdr } from './herdr-pi-runner.mjs'
 import { runVisiblePipeline } from './herdr-visible-pipeline.mjs'
+import { approvalEvent, findControlTowerComments, normalizeSnapshot, renderControlTower } from './control-tower.mjs'
 
 const token = process.env.GITHUB_TOKEN
 const repo = process.env.GITHUB_REPOSITORY
@@ -10,8 +12,27 @@ const pi = process.env.SDLC_PI_BIN ?? 'pi'
 const triggerLabel = process.env.SDLC_TRIGGER_LABEL ?? 'sdlc:ready'
 const processingLabel = process.env.SDLC_PROCESSING_LABEL ?? 'sdlc:processing'
 const approvers = new Set((process.env.SDLC_APPROVERS ?? '').split(',').map((x) => x.trim()).filter(Boolean))
+const botLogin = process.env.SDLC_BOT_LOGIN ?? 'github-actions[bot]'
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const lockPath = process.env.SDLC_LOCK_PATH ?? '.sdlc/control-tower.lock'
+
+function acquireLease() {
+  mkdirSync('.sdlc', { recursive: true })
+  try {
+    const age = Date.now() - statSync(lockPath).mtimeMs
+    if (age < 45 * 60 * 1000) return false
+    unlinkSync(lockPath)
+  } catch { /* absent */ }
+  try {
+    const fd = openSync(lockPath, 'wx')
+    writeFileSync(fd, JSON.stringify({ pid: process.pid, acquired_at: new Date().toISOString() }))
+    closeSync(fd)
+    return true
+  } catch { return false }
+}
+
+function releaseLease() { try { unlinkSync(lockPath) } catch { /* already gone */ } }
 
 export async function github(path, options = {}, attempt = 0) {
   if (!token || !repo) throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required')
@@ -54,6 +75,34 @@ async function comment(number, body) {
 
 async function comments(number) {
   return github(`/repos/${repo}/issues/${number}/comments?per_page=100`)
+}
+
+async function upsertControlTower(number, snapshot, items = null) {
+  const listed = items ?? await comments(number)
+  const matches = findControlTowerComments(listed, botLogin)
+  const body = renderControlTower(snapshot)
+  let winner = matches[0]
+  if (winner) await github(`/repos/${repo}/issues/comments/${winner.id}`, jsonOptions('PATCH', { body }))
+  else winner = await github(`/repos/${repo}/issues/${number}/comments`, jsonOptions('POST', { body }))
+  const reread = await comments(number)
+  const duplicates = findControlTowerComments(reread, botLogin).filter((item) => String(item.id) !== String(winner.id))
+  for (const duplicate of duplicates) await github(`/repos/${repo}/issues/comments/${duplicate.id}`, { method: 'DELETE' })
+  return winner
+}
+
+async function githubSnapshot(issue, result, labels, existingComments) {
+  let pullRequest = null
+  const prNumber = result.pr_number ?? result.pr
+  if (prNumber) {
+    try { pullRequest = await github(`/repos/${repo}/pulls/${prNumber}`) } catch { /* fail safe */ }
+  }
+  const plan = existingComments.find((item) => /\/approve\s+plan\s+/i.test(item.body ?? ''))
+  const qa = existingComments.find((item) => /\/approve\s+qa\s+/i.test(item.body ?? ''))
+  return normalizeSnapshot({
+    issue, labels, result, pullRequest,
+    approvals: { plan: approvalEvent(plan, 'plan', result.plan_hash, approvers), qa: approvalEvent(qa, 'qa', result.qa_hash ?? result.head_sha, approvers) },
+    evidence: result.evidence ?? [],
+  })
 }
 
 function machineState(items) {
@@ -119,9 +168,12 @@ async function runPi(issue, input = {}) {
 async function handle(issue) {
   const number = issue.number
   const currentLabels = issue.labels.map((item) => typeof item === 'string' ? item : item.name)
-  if (currentLabels.includes(processingLabel)) return
-  if (currentLabels.includes('sdlc:qa-approved')) return
   const existingComments = await comments(number)
+  if (currentLabels.includes(processingLabel)) {
+    await upsertControlTower(number, await githubSnapshot(issue, { status: 'processing' }, currentLabels, existingComments), existingComments)
+    return
+  }
+  if (currentLabels.includes('sdlc:qa-approved')) return
   const previous = machineState(existingComments)
   let input = {}
 
@@ -129,6 +181,8 @@ async function handle(issue) {
     if (!previous.plan_hash || !approval(existingComments, 'plan', previous.plan_hash)) return
     if (!previous.plan) return
     input = { approved_plan: true, plan_hash: previous.plan_hash, plan: previous.plan }
+    if (previous.workspace_id && previous.panes) Object.assign(input, { workspace_id: previous.workspace_id, panes: previous.panes })
+    await removeLabel(number, 'sdlc:plan-review')
   } else if (previous?.status === 'awaiting_qa_approval') {
     if (!previous.head_sha || !approval(existingComments, 'qa', previous.head_sha)) return
     await addLabels(number, ['sdlc:qa-approved'])
@@ -148,13 +202,14 @@ async function handle(issue) {
     const marker = `<!-- sdlc-state ${JSON.stringify(result)} -->`
     const readable = JSON.stringify(result, null, 2).slice(0, 14000)
     await comment(number, `${marker}\n## SDLC result\n\n\`\`\`json\n${readable}\n\`\`\``)
+    await upsertControlTower(number, await githubSnapshot(issue, result, currentLabels, await comments(number)))
     if (result.status === 'awaiting_plan_approval') await addLabels(number, ['sdlc:plan-review'])
     else if (result.status === 'awaiting_qa_approval') await addLabels(number, ['sdlc:qa-review'])
     else if (result.status === 'return_to_execute') await addLabels(number, ['sdlc:needs-fix'])
     else await addLabels(number, ['sdlc:blocked'])
   } catch (error) {
     await addLabels(number, ['sdlc:blocked'])
-    await comment(number, `SDLC runner failed safely and did not merge or deploy anything.\n\n\`${String(error.message).slice(0, 2000)}\``)
+    await upsertControlTower(number, await githubSnapshot(issue, { status: 'blocked', phase: 'Falha segura' }, [...currentLabels, 'sdlc:blocked'], await comments(number)))
   } finally {
     await removeLabel(number, processingLabel)
   }
@@ -162,13 +217,16 @@ async function handle(issue) {
 
 export async function main() {
   if (!token || !repo) throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required')
-  const issues = await github(`/repos/${repo}/issues?state=open&per_page=100`)
-  const actionable = issues.filter((item) => {
-    if (item.pull_request) return false
-    const labels = item.labels.map((label) => typeof label === 'string' ? label : label.name)
-    return labels.includes(triggerLabel) || labels.includes('sdlc:plan-review') || labels.includes('sdlc:qa-review')
-  })
-  for (const issue of actionable) await handle(issue)
+  if (!acquireLease()) return
+  try {
+    const issues = await github(`/repos/${repo}/issues?state=open&per_page=100`)
+    const actionable = issues.filter((item) => {
+      if (item.pull_request) return false
+      const labels = item.labels.map((label) => typeof label === 'string' ? label : label.name)
+      return labels.some((label) => label.startsWith('sdlc:'))
+    })
+    for (const issue of actionable) await handle(issue)
+  } finally { releaseLease() }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) await main()

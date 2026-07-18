@@ -16,6 +16,7 @@ autoridade de seguranca.
 ```text
 workflows/issue-sdlc.js          workflow dinamico do PI
 scripts/github-poller.mjs        integracao GitHub e scheduler
+scripts/control-tower.mjs        contrato puro, sanitizacao, gates e upsert
 scripts/promote.mjs              validacao e merge DEV/PROD
 scripts/herdr-visible-pipeline.mjs  uma sessao PI interativa por tarefa
 skills/herdr-sdlc/SKILL.md       regras para operar HERDR
@@ -74,3 +75,13 @@ Qualquer novo commit, plano alterado ou artifact alterado invalida a aprovacao.
 3. O GitHub App usa apenas permissoes minimas.
 4. O bot nao faz bypass da branch protection.
 5. O workflow falha fechado quando nao existe evidencia ou aprovacao valida.
+
+## Control Tower
+
+O poller publica `<!-- sdlc-control-tower:v1 -->` como comentário único por
+Issue. A coleta de snapshot, validação de eventos humanos, allowlist de URLs,
+renderização Markdown e eleição determinística do comentário ficam separadas
+em `scripts/control-tower.mjs`. GitHub (autor, comentário, timestamp, hash,
+head SHA, checks e artifacts) continua sendo a autoridade; dados do HERDR são
+apenas estado observado. Atualizações repetidas usam PATCH no comentário
+existente e, após releitura, removem somente duplicatas do bot.

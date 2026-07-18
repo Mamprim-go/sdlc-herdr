@@ -12,7 +12,7 @@ concurrency:
 permissions:
   contents: read
   issues: write
-  pull-requests: write
+  pull-requests: read
   checks: read
 
 jobs:
@@ -33,3 +33,4 @@ jobs:
           SDLC_APPROVERS: ${{ vars.SDLC_APPROVERS }}
           SDLC_TRIGGER_LABEL: sdlc:ready
           SDLC_PROCESSING_LABEL: sdlc:processing
+          SDLC_BOT_LOGIN: github-actions[bot]
